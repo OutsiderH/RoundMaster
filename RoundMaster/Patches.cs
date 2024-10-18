@@ -1,12 +1,17 @@
-﻿namespace RoundMaster {
+﻿namespace RoundMaster.Patches {
+    using global::RoundMaster.Reflection;
+    using EFT;
     using HarmonyLib;
+    using MonoMod.Cil;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Reflection.Emit;
+    using Mono.Cecil.Cil;
+    using System.Collections;
+    using System.Threading;
+    using System.Diagnostics;
 
-    public abstract class Patches {
-        public abstract class BasePatch {
+    internal abstract class BasePatch {
             private readonly List<MethodInfo> prefixList;
             private readonly List<MethodInfo> postfixList;
             private readonly List<MethodInfo> transpilerList;
@@ -18,7 +23,7 @@
                 transpilerList = [];
                 finalizerList = [];
                 ilmanipulatorList = [];
-                MethodInfo[] methods = PatchType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo[] methods = PatchType.GetMethods(BindingFlagsPreset.allStatic);
                 foreach (MethodInfo method in methods) {
                     foreach (Attribute attribute in method.GetCustomAttributes()) {
                         switch (attribute) {
@@ -84,30 +89,32 @@
                 }
             }
         }
-        public class VanillaMagazinePresetFix : BasePatch {
-            public VanillaMagazinePresetFix() : base() {
-
-            }
-            protected override MethodBase TargetMethod {
-                get => typeof(MagazineBuildPresetClass).GetMethod("method_2");
-            }
-            protected override Type PatchType {
-                get => typeof(VanillaMagazinePresetFix);
-            }
-            [HarmonyTranspiler]
-            private static void Transpiler(IEnumerable<CodeInstruction> instructions) {
-                List<CodeInstruction> instructionsList = new(instructions);
-                instructionsList.InsertRange(110, [
-                    new(OpCodes.Dup), // 110 (string, string)
-                    new(OpCodes.Call, typeof(VanillaMagazinePresetFix).GetMethod("IsValidId")), // 111 (bool, string)
-                    new(OpCodes.Brtrue, 115), // 112 string -> 115 call valuetype EFT.MongoID EFT.MongoID::op_Implicit(string)
-                    new(OpCodes.Pop), // 113 ()
-                    new(OpCodes.Br, 153) // 114 ()
-                ]);
-            }
-            private static bool IsValidId(string id) {
-                return int.TryParse(id, out _);
-            }
+    internal class VanillaMagazinePresetFix : BasePatch {
+        private readonly MethodBase _targetMethod;
+        internal VanillaMagazinePresetFix() : base() {
+            _targetMethod = typeof(MagazineBuildPresetClass).GetMethod("method_2", BindingFlagsPreset.publicInstance);
+        }
+        protected override MethodBase TargetMethod {
+            get => _targetMethod;
+        }
+        protected override Type PatchType {
+            get => typeof(VanillaMagazinePresetFix);
+        }
+        [HarmonyILManipulator]
+        [HarmonyDebug]
+        private static void ILManipulator(ILContext context, MethodBase original, ILLabel retLabel) {
+            ILCursor cursorConstructMongoId = new ILCursor(context).GotoNext(instruction => instruction.MatchCall(typeof(MongoID).GetMethod("op_Implicit", BindingFlagsPreset.publicStatic, null, [typeof(string)], null)));
+            ILLabel labelAfterConstructMongoId = context.DefineLabel(cursorConstructMongoId.Clone().Next);
+            ILLabel labelContinueLoop = context.DefineLabel(cursorConstructMongoId.Clone().GotoNext(instruction => instruction.MatchCallvirt(typeof(IEnumerator).GetMethod("MoveNext", BindingFlagsPreset.publicInstance))).Prev);
+            cursorConstructMongoId
+                .Emit(OpCodes.Dup)
+                .Emit(OpCodes.Call, typeof(VanillaMagazinePresetFix).GetMethod("IsValidId", BindingFlagsPreset.nonPublicStatic))
+                .Emit(OpCodes.Brtrue_S, labelAfterConstructMongoId)
+                .Emit(OpCodes.Pop)
+                .Emit(OpCodes.Br, labelContinueLoop);
+        }
+        private static bool IsValidId(string id) {
+            return int.TryParse(id, out _);
         }
     }
 }

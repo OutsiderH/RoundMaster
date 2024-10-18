@@ -5,6 +5,34 @@
 	<LangVersion>latestMajor</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Nullable>warnings</Nullable>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>AnyCPU;x64</Platforms>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+    <DebugType>embedded</DebugType>
+    <WarningLevel>9999</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Optimize>False</Optimize>
+    <DebugType>embedded</DebugType>
+    <WarningLevel>9999</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>True</Optimize>
+    <DebugType>embedded</DebugType>
+    <WarningLevel>9999</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Optimize>True</Optimize>
+    <DebugType>embedded</DebugType>
+    <WarningLevel>9999</WarningLevel>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,11 +45,20 @@
     <Reference Include="BepInEx">
       <HintPath>ref\BepInEx.dll</HintPath>
     </Reference>
+    <Reference Include="Comfort">
+      <HintPath>ref\Comfort.dll</HintPath>
+    </Reference>
+    <Reference Include="IcyClawz.CustomInteractions">
+      <HintPath>ref\IcyClawz.CustomInteractions.dll</HintPath>
+    </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>ref\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="MonoMod.Utils">
       <HintPath>ref\MonoMod.Utils.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>ref\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>ref\UnityEngine.dll</HintPath>

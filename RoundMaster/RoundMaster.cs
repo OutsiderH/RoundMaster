@@ -1,32 +1,48 @@
 ﻿namespace RoundMaster {
+    using global::RoundMaster.CustomInteraction;
+    using global::RoundMaster.Localization;
+    using global::RoundMaster.Patches;
     using BepInEx;
     using BepInEx.Logging;
     using HarmonyLib;
-    using System.Collections.Generic;
+    using IcyClawz.CustomInteractions;
 
     [BepInPlugin(ModInfo.id, ModInfo.name, ModInfo.version)]
-    public class RoundMaster : BaseUnityPlugin {
-        private static ManualLogSource logger;
+    public sealed class RoundMaster : BaseUnityPlugin {
+        private static RoundMaster _instance;
+        private ManualLogSource _logger;
         private Harmony harmonyInstance;
-        private List<Patches.BasePatch> patches;
-        internal static new ManualLogSource Logger {
-            get {
-                return logger;
-            }
+        private LocalizationManager localization;
+        private BasePatch[] patches;
+        internal static RoundMaster Instance {
+            get => _instance;
+            private set => _instance = value;
+        }
+        internal new ManualLogSource Logger {
+            get => _logger;
+            private set => _logger = value;
+        }
+        internal LocalizationManager Localization {
+            get => localization;
+            private set => localization = value;
         }
         private void Awake() {
-            logger = new(ModInfo.name);
+            Instance = this;
+            Logger = base.Logger;
             harmonyInstance = new(ModInfo.id);
-            patches = [new Patches.VanillaMagazinePresetFix()];
-            foreach (Patches.BasePatch patch in patches) {
+            Localization = new();
+            patches = [new VanillaMagazinePresetFix()];
+            foreach (BasePatch patch in patches) {
                 patch.Enable(harmonyInstance);
             }
+            CustomInteractionsManager.Register(new MagazineInteractionsProvider());
         }
 
         private void OnDestroy() {
-            foreach (Patches.BasePatch patch in patches) {
+            foreach (BasePatch patch in patches) {
                 patch.Disable(harmonyInstance);
             }
+            Logger.Dispose();
         }
     }
 }
