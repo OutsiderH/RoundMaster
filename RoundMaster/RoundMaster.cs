@@ -31,7 +31,10 @@
             Logger = base.Logger;
             harmonyInstance = new(ModInfo.id);
             Localization = new();
-            patches = [new VanillaMagazinePresetFix()];
+            patches = [
+                new VanillaMagazinePresetFix(),
+                new SettingInitCapture()
+            ];
             foreach (BasePatch patch in patches) {
                 patch.Enable(harmonyInstance);
             }

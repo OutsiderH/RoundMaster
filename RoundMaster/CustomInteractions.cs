@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS0618
 namespace RoundMaster.CustomInteraction {
-    using global::RoundMaster.Localization;
     using EFT.InventoryLogic;
     using EFT.UI;
     using IcyClawz.CustomInteractions;
@@ -12,11 +11,11 @@ namespace RoundMaster.CustomInteraction {
             if (item is not MagazineClass magazine) {
                 yield break;
             }
-            if (!InGameStatus.InRaid || false) {
-                yield break;
-            }
+            //if (!InGameStatus.InRaid) {
+            //    yield break;
+            //}
             yield return new() {
-                Caption = () => (string)Text.Localized("load_magazine"),
+                Caption = () => new Localization.LocalizedText("load_magazine"),
                 Action = () => { },
             };
         }

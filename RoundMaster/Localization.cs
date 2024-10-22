@@ -1,13 +1,16 @@
 ﻿namespace RoundMaster.Localization {
+    using global::RoundMaster.Patches;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
     using System.Collections.Generic;
     using System.IO;
     using Bsg.GameSettings;
-    using Comfort.Common;
+    using System;
 
     internal class LocalizationManager {
         private readonly Dictionary<string, Dictionary<string, string>> table;
+        private GameSetting<string> languageSetting;
+        internal event Action onLanguageChanged;
         internal LocalizationManager() {
             table = [];
             DirectoryInfo localeDir = new("./BepInEx/Plugins/dev/locale");
@@ -31,24 +34,37 @@
                         }
                         subTable[pair.Key] = (string)pair.Value;
                     }
-                    table[file.Name] = subTable;
+                    table[file.Name[..2]] = subTable;
                 }
             }
+            SettingInitCapture.onSettingInit += (setting) => {
+                languageSetting = setting.Game.Settings.Language;
+                languageSetting.Subscribe(newLanguage => {
+                    onLanguageChanged?.Invoke();
+                });
+            };
         }
-        internal bool TryLocalize(string language, string key, out string value) {
+        internal bool TryLocalize(string key, out string value) {
             value = null;
-            return table.TryGetValue(language, out Dictionary<string, string> subTable) && subTable.TryGetValue(key, out value);
+            return table.TryGetValue(languageSetting, out Dictionary<string, string> subTable) && subTable.TryGetValue(key, out value);
         }
     }
 
-    internal class Text {
+    internal class LocalizedText {
+        private readonly string key;
         private string str;
-        internal static Text Localized(string key) {
-            return new() {
-                str = key
-            };
+        internal LocalizedText(string key) {
+            this.key = key;
+            Refresh();
+            RoundMaster.Instance.Localization.onLanguageChanged += Refresh;
         }
-        public static implicit operator string(Text instance) {
+        ~LocalizedText() {
+            RoundMaster.Instance.Localization.onLanguageChanged -= Refresh;
+        }
+        private void Refresh() {
+            str = RoundMaster.Instance.Localization.TryLocalize(key, out string value) ? value : key;
+        }
+        public static implicit operator string(LocalizedText instance) {
             return instance.str;
         }
     }

@@ -8,8 +8,7 @@
     using System.Reflection;
     using Mono.Cecil.Cil;
     using System.Collections;
-    using System.Threading;
-    using System.Diagnostics;
+    using System.Linq;
 
     internal abstract class BasePatch {
             private readonly List<MethodInfo> prefixList;
@@ -101,20 +100,45 @@
             get => typeof(VanillaMagazinePresetFix);
         }
         [HarmonyILManipulator]
-        [HarmonyDebug]
         private static void ILManipulator(ILContext context, MethodBase original, ILLabel retLabel) {
             ILCursor cursorConstructMongoId = new ILCursor(context).GotoNext(instruction => instruction.MatchCall(typeof(MongoID).GetMethod("op_Implicit", BindingFlagsPreset.publicStatic, null, [typeof(string)], null)));
-            ILLabel labelAfterConstructMongoId = context.DefineLabel(cursorConstructMongoId.Clone().Next);
+            ILLabel labelContinueConstructMongoId = context.DefineLabel(cursorConstructMongoId.Clone().Next);
             ILLabel labelContinueLoop = context.DefineLabel(cursorConstructMongoId.Clone().GotoNext(instruction => instruction.MatchCallvirt(typeof(IEnumerator).GetMethod("MoveNext", BindingFlagsPreset.publicInstance))).Prev);
             cursorConstructMongoId
                 .Emit(OpCodes.Dup)
                 .Emit(OpCodes.Call, typeof(VanillaMagazinePresetFix).GetMethod("IsValidId", BindingFlagsPreset.nonPublicStatic))
-                .Emit(OpCodes.Brtrue_S, labelAfterConstructMongoId)
+                .Emit(OpCodes.Brtrue_S, labelContinueConstructMongoId)
                 .Emit(OpCodes.Pop)
                 .Emit(OpCodes.Br, labelContinueLoop);
         }
         private static bool IsValidId(string id) {
             return int.TryParse(id, out _);
+        }
+    }
+    internal class SettingInitCapture : BasePatch {
+        private readonly MethodBase _targetMethod;
+        internal static event Action<SharedGameSettingsClass> onSettingInit;
+        internal SettingInitCapture() : base() {
+            _targetMethod = typeof(SharedGameSettingsClass.Struct468).GetMethod("MoveNext", BindingFlagsPreset.publicInstance);
+        }
+        protected override MethodBase TargetMethod {
+            get => _targetMethod;
+        }
+        protected override Type PatchType {
+            get => typeof(SettingInitCapture);
+        }
+        [HarmonyTranspiler]
+        [HarmonyDebug]
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+            List<CodeInstruction> newInstructions = instructions.ToList();
+            newInstructions.InsertRange(newInstructions.Count - 1, [
+                new(System.Reflection.Emit.OpCodes.Ldloc_1),
+                new(System.Reflection.Emit.OpCodes.Call, typeof(SettingInitCapture).GetMethod("InvokeSettingInit", BindingFlagsPreset.nonPublicStatic))
+            ]);
+            return newInstructions;
+        }
+        private static void InvokeSettingInit(SharedGameSettingsClass settings) {
+            onSettingInit?.Invoke(settings);
         }
     }
 }
