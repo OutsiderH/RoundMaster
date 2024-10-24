@@ -11,12 +11,17 @@ namespace RoundMaster.CustomInteraction {
             if (item is not MagazineClass magazine) {
                 yield break;
             }
-            //if (!InGameStatus.InRaid) {
-            //    yield break;
-            //}
+            if (!InGameStatus.InRaid) {
+                //yield break;
+            }
             yield return new() {
-                Caption = () => new Localization.LocalizedText("load_magazine"),
-                Action = () => { },
+                Caption = () => new Localization.LocalizedText("load_preset"),
+                Enabled = () => {
+                    return false;
+                },
+                Action = () => {
+                    throw new System.NotImplementedException();
+                },
             };
         }
     }

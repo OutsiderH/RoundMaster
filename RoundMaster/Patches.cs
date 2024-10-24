@@ -100,6 +100,7 @@
             get => typeof(VanillaMagazinePresetFix);
         }
         [HarmonyILManipulator]
+        [HarmonyDebug]
         private static void ILManipulator(ILContext context, MethodBase original, ILLabel retLabel) {
             ILCursor cursorConstructMongoId = new ILCursor(context).GotoNext(instruction => instruction.MatchCall(typeof(MongoID).GetMethod("op_Implicit", BindingFlagsPreset.publicStatic, null, [typeof(string)], null)));
             ILLabel labelContinueConstructMongoId = context.DefineLabel(cursorConstructMongoId.Clone().Next);
@@ -109,10 +110,18 @@
                 .Emit(OpCodes.Call, typeof(VanillaMagazinePresetFix).GetMethod("IsValidId", BindingFlagsPreset.nonPublicStatic))
                 .Emit(OpCodes.Brtrue_S, labelContinueConstructMongoId)
                 .Emit(OpCodes.Pop)
-                .Emit(OpCodes.Br, labelContinueLoop);
+                .Emit(OpCodes.Br_S, labelContinueLoop);
         }
         private static bool IsValidId(string id) {
-            return int.TryParse(id, out _);
+            if (id.Length != 24) {
+                return false;
+            }
+            foreach (char c in id) {
+                if ((c < '0' || c > '9') && (c < 'a' || c > 'f')) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
     internal class SettingInitCapture : BasePatch {
@@ -128,8 +137,7 @@
             get => typeof(SettingInitCapture);
         }
         [HarmonyTranspiler]
-        [HarmonyDebug]
-        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+        private static List<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             List<CodeInstruction> newInstructions = instructions.ToList();
             newInstructions.InsertRange(newInstructions.Count - 1, [
                 new(System.Reflection.Emit.OpCodes.Ldloc_1),

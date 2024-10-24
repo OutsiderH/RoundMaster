@@ -39,9 +39,7 @@
             }
             SettingInitCapture.onSettingInit += (setting) => {
                 languageSetting = setting.Game.Settings.Language;
-                languageSetting.Subscribe(newLanguage => {
-                    onLanguageChanged?.Invoke();
-                });
+                languageSetting.Subscribe(_ => onLanguageChanged?.Invoke());
             };
         }
         internal bool TryLocalize(string key, out string value) {
