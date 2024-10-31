@@ -2,9 +2,6 @@
     using System.Linq.Expressions;
     using System.Reflection;
     using System;
-    using Mono.Collections.Generic;
-    using Mono.Cecil.Cil;
-    using MonoMod.Cil;
 
     public abstract class ValueAccessor<Class, Value> {
         private readonly Func<Class, Value> getValue;

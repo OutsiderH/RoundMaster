@@ -100,7 +100,6 @@
             get => typeof(VanillaMagazinePresetFix);
         }
         [HarmonyILManipulator]
-        [HarmonyDebug]
         private static void ILManipulator(ILContext context, MethodBase original, ILLabel retLabel) {
             ILCursor cursorConstructMongoId = new ILCursor(context).GotoNext(instruction => instruction.MatchCall(typeof(MongoID).GetMethod("op_Implicit", BindingFlagsPreset.publicStatic, null, [typeof(string)], null)));
             ILLabel labelContinueConstructMongoId = context.DefineLabel(cursorConstructMongoId.Clone().Next);

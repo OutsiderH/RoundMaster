@@ -38,7 +38,7 @@
             foreach (BasePatch patch in patches) {
                 patch.Enable(harmonyInstance);
             }
-            CustomInteractionsManager.Register(new MagazineInteractionsProvider());
+            //CustomInteractionsManager.Register(new MagazineInteractionsProvider());
         }
 
         private void OnDestroy() {
